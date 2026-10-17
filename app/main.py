@@ -1,5 +1,7 @@
 import os
+
 from dotenv import load_dotenv
+
 from app.mistral_chat import MistralCompletionsClient
 
 load_dotenv()
