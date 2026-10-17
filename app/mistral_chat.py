@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Self, cast
+from typing import Self
 
 import httpx
 
@@ -11,7 +11,7 @@ class MistralCompletionsClient:
 
     def __init__(self, api_key: str):
         self._api_key: str = api_key
-        self._client: httpx.AsyncClient = httpx.AsyncClient()
+        self._client: httpx.AsyncClient = httpx.AsyncClient(timeout=20.0)
 
     async def __aenter__(self) -> Self:
         return self
@@ -40,7 +40,10 @@ class MistralCompletionsClient:
         if not isinstance(raw, dict):
             raise TypeError("Expected JSON object from Mistral API")
 
-        assistant_response = cast(dict[str, str], raw["choices"][0]["message"])
+        content = raw["choices"][0]["message"]["content"]  # pyright: ignore[reportUnknownVariableType]
+        if not isinstance(content, str):
+            raise TypeError("Expected text content from Mistral API")
+        assistant_response: dict[str, str] = {"role": "assistant", "content": content}
         return Chat(self, messages + [assistant_response])
 
 
