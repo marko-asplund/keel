@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 from app.mistral_chat import MistralCompletionsClient
 
-load_dotenv()
+_ = load_dotenv()
 
 client = MistralCompletionsClient(str(os.getenv("MISTRAL_API_KEY")))
 
