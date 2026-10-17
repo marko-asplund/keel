@@ -1,0 +1,38 @@
+# Secrets & environment
+.env
+.env.*
+key.txt
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+env/
+
+# IDE & editor
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage & testing
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+
+# Misc
+foo.json
