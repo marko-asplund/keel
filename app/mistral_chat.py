@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
-from typing import Self
+from typing import Self, cast
 
 import httpx
 
@@ -27,7 +27,7 @@ class MistralCompletionsClient:
 
     async def _chat_one_turn(
         self, messages: list[dict[str, object]], tools: list[Tool] | None
-    ) -> (list[dict[str, object]], dict[str, object]):
+    ) -> tuple[dict[str, object], list[dict[str, object]]]:
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
@@ -40,32 +40,29 @@ class MistralCompletionsClient:
             payload["tools"] = [t.meta for t in tools]
             payload["tool_choice"] = "auto"
         url = f"{self._mistral_api_base_url}/v1/chat/completions"
-        print("REQUEST PAYLOAD")
-        print(payload)
         r = await self._client.post(url, headers=headers, json=payload)
         _ = r.raise_for_status()
 
-        raw = r.json()  # pyright: ignore[reportAny]
+        raw = cast(object, r.json())
         if not isinstance(raw, dict):
             raise TypeError("Expected JSON object from Mistral API")
 
-        message = raw["choices"][0]["message"]  # pyright: ignore[reportUnknownVariableType]
+        choices = cast(list[dict[str, object]], raw["choices"])
+        message = cast(dict[str, object], choices[0]["message"])
         content = message["content"]
-        tool_calls = message["tool_calls"]
+        tool_calls = cast(list[dict[str, object]] | None, message.get("tool_calls"))
 
-        tool_messages = []
+        tool_messages: list[dict[str, object]] = []
         if tools is not None and tool_calls is not None:
             allowed_functions = {t.name: t for t in tools}
-            allowed_calls = filter(
-                lambda t: (
-                    t["type"] == "function"
-                    and t["function"]["name"] in allowed_functions
-                ),
-                tool_calls,
-            )
-            for c in allowed_calls:
-                name = c["function"]["name"]
-                args = json.loads(c["function"]["arguments"])
+            for c in tool_calls:
+                if c["type"] != "function":
+                    continue
+                function = cast(dict[str, str], c["function"])
+                name = function["name"]
+                if name not in allowed_functions:
+                    continue
+                args = cast(dict[str, object], json.loads(function["arguments"]))
                 fn = allowed_functions[name]
                 value = fn.fn(**args)
                 tool_messages.append(
@@ -82,8 +79,9 @@ class MistralCompletionsClient:
             assistant_response = {
                 "role": "assistant",
                 "content": content,
-                "tool_calls": tool_calls,
             }
+            if "tool_calls" in message:
+                assistant_response["tool_calls"] = tool_calls
 
         return assistant_response, tool_messages
 
@@ -109,10 +107,6 @@ class MistralCompletionsClient:
         if tool_messages:
             raise RuntimeError("Maximum tool-calling rounds exceeded")
 
-        print("NEW MESSAGES FOR NEXT ITER")
-        print(new_messages)
-        print("--- END")
-
         return Chat(self, new_messages, tools)
 
 
@@ -136,6 +130,6 @@ class Chat:
 
 class Tool:
     def __init__(self, name: str, fn: Callable[..., object], meta: object):
-        self.name = name
-        self.fn = fn
-        self.meta = meta
+        self.name: str = name
+        self.fn: Callable[..., object] = fn
+        self.meta: object = meta
