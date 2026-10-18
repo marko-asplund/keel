@@ -69,16 +69,17 @@ class MistralCompletionsClient:
         tool_calls = message.get("tool_calls")
 
         tool_messages: list[dict[str, object]] = []
-        if tools is not None and tool_calls is not None:
+        if tool_calls:
+            if not tools:
+                raise ValueError("Tool calls received but no tools are registered")
             allowed_functions = {t.name: t for t in tools}
-            allowed_calls = filter(
-                lambda t: (
+            for t in tool_calls:
+                if not (
                     t["type"] == "function"
                     and t["function"]["name"] in allowed_functions
-                ),
-                tool_calls,
-            )
-            for c in allowed_calls:
+                ):
+                    raise ValueError(f"Tool call not allowed: {t}")
+            for c in tool_calls:
                 name = c["function"]["name"]
                 args = cast(dict[str, object], json.loads(c["function"]["arguments"]))
                 fn = allowed_functions[name]
