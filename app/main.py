@@ -3,40 +3,42 @@ import os
 
 from dotenv import load_dotenv
 
-from app.mistral_chat import MistralCompletionsClient, Tool
+from app.mistral_chat import MistralCompletionsClient
+from app.tools import tool_get_company_financials
 
 _ = load_dotenv()
 mistral_api_key: str = str(os.getenv("MISTRAL_API_KEY"))
 
 
-def calculate_percentage_change(old: float, new: float) -> float:
-    return (new - old) / old * 100
-
-
-tool_calculate_percentage_change: Tool = Tool(
-    "calculate_percentage_change",
-    calculate_percentage_change,
-    {
-        "type": "function",
-        "function": {
-            "name": "calculate_percentage_change",
-            "description": "Calculate the percentage change between two values",
-            "parameters": {
-                "type": "object",
-                "properties": {"old": {"type": "number"}, "new": {"type": "number"}},
-                "required": ["old", "new"],
-            },
-        },
-    },
-)
-
-tools: list[Tool] = [tool_calculate_percentage_change]
+async def multiturn_tool_chat(client: MistralCompletionsClient) -> None:
+    print("turn1")
+    chat0 = await client.start_chat(
+        "Calculate the percentage increase from 120 to 150 using the tool.",
+        [tool_get_company_financials],
+    )
+    print(chat0.messages)
+    print("turn2")
+    chat01 = await chat0.chat(
+        "Now calculate the percentage increase from 150 to 210 using the same tool."
+    )
+    print(chat01.messages)
+    print("turn3")
+    chat02 = await chat01.chat(
+        "Which of these two increases was larger, and by how many percentage points?"
+    )
+    print(chat02.messages)
 
 
 async def main() -> None:
     async with MistralCompletionsClient(mistral_api_key) as client:
+        #        prompt = "What's the percentage increase from 120 to 150?"
+        # prompt = "Calculate the percentage changes from 100 to 120, from 150 to 180, and from 200 to 250. Use the calculation tool for each, then compare the results."
+        # prompt = "First, use the tool to calculate the percentage change from 120 to 150. Then take the percentage returned by the tool and use it as the old value for another percentage change calculation, with 50 as the new value. Use the tool for both calculations."
+        # await multiturn_tool_chat(client)
+
         chat0 = await client.start_chat(
-            "What's the percentage increase from 120 to 150?", tools
+            "What was Microsoft's revenue and operating income in fiscal year 2023?",
+            [tool_get_company_financials],
         )
         print(chat0.messages)
 
