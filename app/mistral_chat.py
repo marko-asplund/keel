@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from typing import Self
 
 import httpx
-import json
 
 
 class MistralCompletionsClient:
@@ -21,13 +21,13 @@ class MistralCompletionsClient:
     async def __aexit__(self, *args: object) -> None:
         await self._client.aclose()
 
-    async def start_chat(self, prompt: str, tools: list[Tool] | None) -> Chat:
-        messages: list[dict[str, str]] = [{"role": "user", "content": prompt}]
+    async def start_chat(self, prompt: str, tools: list[Tool] | None = None) -> Chat:
+        messages: list[dict[str, object]] = [{"role": "user", "content": prompt}]
         return await self.chat(messages, tools)
 
-    async def chat(
-        self, messages: list[dict[str, str]], tools: list[Tool] | None
-    ) -> Chat:
+    async def _chat_one_turn(
+        self, messages: list[dict[str, object]], tools: list[Tool] | None
+    ) -> (list[dict[str, object]], dict[str, object]):
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
@@ -40,6 +40,8 @@ class MistralCompletionsClient:
             payload["tools"] = [t.meta for t in tools]
             payload["tool_choice"] = "auto"
         url = f"{self._mistral_api_base_url}/v1/chat/completions"
+        print("REQUEST PAYLOAD")
+        print(payload)
         r = await self._client.post(url, headers=headers, json=payload)
         _ = r.raise_for_status()
 
@@ -48,11 +50,11 @@ class MistralCompletionsClient:
             raise TypeError("Expected JSON object from Mistral API")
 
         message = raw["choices"][0]["message"]  # pyright: ignore[reportUnknownVariableType]
-        print(message)
         content = message["content"]
         tool_calls = message["tool_calls"]
 
-        if tools is not None:
+        tool_messages = []
+        if tools is not None and tool_calls is not None:
             allowed_functions = {t.name: t for t in tools}
             allowed_calls = filter(
                 lambda t: (
@@ -62,38 +64,73 @@ class MistralCompletionsClient:
                 tool_calls,
             )
             for c in allowed_calls:
+                name = c["function"]["name"]
                 args = json.loads(c["function"]["arguments"])
-                fn = allowed_functions[c["function"]["name"]]
+                fn = allowed_functions[name]
                 value = fn.fn(**args)
-                print(f"c: {c} -- {args} -- {value}")
+                tool_messages.append(
+                    {
+                        "role": "tool",
+                        "name": name,
+                        "tool_call_id": c["id"],
+                        "content": json.dumps(value),
+                    }
+                )
 
-        if not isinstance(content, str):
-            raise TypeError("Expected text content from Mistral API")
+        assistant_response: dict[str, object] = {}
+        if content is not None or tool_calls is not None:
+            assistant_response = {
+                "role": "assistant",
+                "content": content,
+                "tool_calls": tool_calls,
+            }
 
-        assistant_response: dict[str, str] = {"role": "assistant", "content": content}
-        return Chat(self, messages + [assistant_response], tools)
+        return assistant_response, tool_messages
+
+    async def chat(
+        self, messages: list[dict[str, object]], tools: list[Tool] | None
+    ) -> Chat:
+
+        new_messages = messages
+
+        assistant_response, tool_messages = await self._chat_one_turn(messages, tools)
+
+        if assistant_response:
+            new_messages = new_messages + [assistant_response]
+        if len(tool_messages) > 0:
+            new_messages = new_messages + tool_messages
+            assistant_response, tool_messages = await self._chat_one_turn(
+                new_messages, tools
+            )
+            new_messages = new_messages + [assistant_response] + tool_messages
+
+        print("NEW MESSAGES FOR NEXT ITER")
+        print(new_messages)
+        print("--- END")
+
+        return Chat(self, new_messages, tools)
 
 
 class Chat:
     def __init__(
         self,
         client: MistralCompletionsClient,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, object]],
         tools: list[Tool] | None,
     ):
         self.client: MistralCompletionsClient = client
-        self.messages: list[dict[str, str]] = messages
+        self.messages: list[dict[str, object]] = messages
         self.tools: list[Tool] | None = tools
 
     async def chat(self, prompt: str) -> Chat:
-        new_messages: list[dict[str, str]] = self.messages + [
+        new_messages: list[dict[str, object]] = self.messages + [
             {"role": "user", "content": prompt}
         ]
         return await self.client.chat(new_messages, self.tools)
 
 
 class Tool:
-    def __init__(self, name: str, fn: Callable[..., ...], meta: object):
+    def __init__(self, name: str, fn: Callable[..., object], meta: object):
         self.name = name
         self.fn = fn
         self.meta = meta
