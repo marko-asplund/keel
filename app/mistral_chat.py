@@ -97,12 +97,17 @@ class MistralCompletionsClient:
 
         if assistant_response:
             new_messages = new_messages + [assistant_response]
-        if len(tool_messages) > 0:
+        remaining_tool_call_rounds = 5
+        while remaining_tool_call_rounds > 0 and tool_messages:
             new_messages = new_messages + tool_messages
             assistant_response, tool_messages = await self._chat_one_turn(
                 new_messages, tools
             )
-            new_messages = new_messages + [assistant_response] + tool_messages
+            new_messages = new_messages + [assistant_response]
+            remaining_tool_call_rounds -= 1
+
+        if tool_messages:
+            raise RuntimeError("Maximum tool-calling rounds exceeded")
 
         print("NEW MESSAGES FOR NEXT ITER")
         print(new_messages)
