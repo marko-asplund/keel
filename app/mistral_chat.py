@@ -2,9 +2,25 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
-from typing import Self, cast
+from typing import NotRequired, Self, TypedDict, cast
 
 import httpx
+
+
+class FunctionCall(TypedDict):
+    name: str
+    arguments: str
+
+
+class ToolCall(TypedDict):
+    id: str
+    type: str
+    function: FunctionCall
+
+
+class AssistantMessage(TypedDict):
+    content: str | None
+    tool_calls: NotRequired[list[ToolCall] | None]
 
 
 class MistralCompletionsClient:
@@ -48,21 +64,23 @@ class MistralCompletionsClient:
             raise TypeError("Expected JSON object from Mistral API")
 
         choices = cast(list[dict[str, object]], raw["choices"])
-        message = cast(dict[str, object], choices[0]["message"])
+        message = cast(AssistantMessage, choices[0]["message"])
         content = message["content"]
-        tool_calls = cast(list[dict[str, object]] | None, message.get("tool_calls"))
+        tool_calls = message.get("tool_calls")
 
         tool_messages: list[dict[str, object]] = []
         if tools is not None and tool_calls is not None:
             allowed_functions = {t.name: t for t in tools}
-            for c in tool_calls:
-                if c["type"] != "function":
-                    continue
-                function = cast(dict[str, str], c["function"])
-                name = function["name"]
-                if name not in allowed_functions:
-                    continue
-                args = cast(dict[str, object], json.loads(function["arguments"]))
+            allowed_calls = filter(
+                lambda t: (
+                    t["type"] == "function"
+                    and t["function"]["name"] in allowed_functions
+                ),
+                tool_calls,
+            )
+            for c in allowed_calls:
+                name = c["function"]["name"]
+                args = cast(dict[str, object], json.loads(c["function"]["arguments"]))
                 fn = allowed_functions[name]
                 value = fn.fn(**args)
                 tool_messages.append(
