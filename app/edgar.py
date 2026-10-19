@@ -39,23 +39,26 @@ class EdgarAPI:
 
         return r
 
-    def _get_tickers(self):
+    def _get_tickers(self) -> dict[str, Ticker]:
         tickers_file = Path("cache/tickers.json")
+        tickers: dict[str, Ticker]
         if tickers_file.is_file():
             text = tickers_file.read_text()
-            tickers: dict[str, Ticker] = cast(dict[str, Ticker], json.loads(text))
+            tickers = cast(dict[str, Ticker], json.loads(text))
         else:
             r = self._fetch_tickers()
             _ = tickers_file.write_text(r.text)
-            tickers: dict[str, Ticker] = cast(dict[str, Ticker], r.json())
+            tickers = cast(dict[str, Ticker], r.json())
         return {t["ticker"]: t for t in tickers.values()}
 
-    def get_company_financials(self, ticker: str, start_year: int, end_year: int) -> object:
+    def get_company_financials(
+        self, ticker: str, start_year: int, end_year: int
+    ) -> object:
         by_ticker = self._get_tickers()
-        data = by_ticker[ticker]
-        if not data:
+        ticker_data = by_ticker[ticker]
+        if not ticker_data:
             raise ValueError(f"Ticker {ticker} not found")
-        cik = int(data["cik_str"])
+        cik = int(ticker_data["cik_str"])
         url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 
         r = self._client.get(
@@ -64,18 +67,20 @@ class EdgarAPI:
         )
         _ = r.raise_for_status()
 
-        data = r.json()
-        gaap = data["facts"]["us-gaap"]
+        data = cast(dict[str, object], r.json())
+        facts = cast(dict[str, object], data["facts"])
+        gaap = cast(dict[str, dict[str, object]], facts["us-gaap"])
 
         for concept in list(gaap):
             if concept not in self._included_concepts:
                 del gaap[concept]
                 continue
-            for unit, observations in gaap[concept]["units"].items():
-                gaap[concept]["units"][unit] = [
+            units = cast(dict[str, list[dict[str, object]]], gaap[concept]["units"])
+            for unit, observations in units.items():
+                units[unit] = [
                     obs
                     for obs in observations
-                    if start_year <= int(obs["end"][:4]) <= end_year
+                    if start_year <= int(cast(str, obs["end"])[:4]) <= end_year
                 ]
 
         data["facts"] = {"us-gaap": gaap}
