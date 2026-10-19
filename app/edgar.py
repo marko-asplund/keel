@@ -17,21 +17,21 @@ class EdgarAPI:
             "RevenueFromContractWithCustomerExcludingAssessedTax",
             "OperatingIncomeLoss",
         }
-        self._client: httpx.Client = httpx.Client(timeout=5.0)
+        self._client: httpx.AsyncClient = httpx.AsyncClient(timeout=5.0)
         self._user_agent: str = user_agent
         self._request_headers: dict[str, str] = {
             "User-Agent": user_agent,
             "Accept": "application/json",
         }
 
-    def __enter__(self) -> Self:
+    async def __aenter__(self) -> Self:
         return self
 
-    def __exit__(self, *args: object) -> None:
-        self._client.close()
+    async def __aexit__(self, *args: object) -> None:
+        await self._client.aclose()
 
-    def _fetch_tickers(self) -> httpx.Response:
-        r = self._client.get(
+    async def _fetch_tickers(self) -> httpx.Response:
+        r = await self._client.get(
             "https://www.sec.gov/files/company_tickers.json",
             headers=self._request_headers,
         )
@@ -39,29 +39,29 @@ class EdgarAPI:
 
         return r
 
-    def _get_tickers(self) -> dict[str, Ticker]:
+    async def _get_tickers(self) -> dict[str, Ticker]:
         tickers_file = Path("cache/tickers.json")
         tickers: dict[str, Ticker]
         if tickers_file.is_file():
             text = tickers_file.read_text()
             tickers = cast(dict[str, Ticker], json.loads(text))
         else:
-            r = self._fetch_tickers()
+            r = await self._fetch_tickers()
             _ = tickers_file.write_text(r.text)
             tickers = cast(dict[str, Ticker], r.json())
         return {t["ticker"]: t for t in tickers.values()}
 
-    def get_company_financials(
+    async def get_company_financials(
         self, ticker: str, start_year: int, end_year: int
     ) -> object:
-        by_ticker = self._get_tickers()
-        ticker_data = by_ticker[ticker]
-        if not ticker_data:
+        by_ticker = await self._get_tickers()
+        ticker_data = by_ticker.get(ticker)
+        if ticker_data is None:
             raise ValueError(f"Ticker {ticker} not found")
         cik = int(ticker_data["cik_str"])
         url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 
-        r = self._client.get(
+        r = await self._client.get(
             url,
             headers=self._request_headers,
         )

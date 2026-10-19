@@ -35,19 +35,21 @@ async def multiturn_tool_chat(client: MistralCompletionsClient) -> None:
 
 
 async def main() -> None:
-    with EdgarAPI("Keel Research keel.app2026@gmail.com") as edgar:
+    async with (
+        EdgarAPI("Keel Research keel.app2026@gmail.com") as edgar,
+        MistralCompletionsClient(mistral_api_key) as client,
+    ):
         tool = Tool(
             "get_company_financials",
             edgar.get_company_financials,
             get_company_financials_tool_schema,
         )
 
-        async with MistralCompletionsClient(mistral_api_key) as client:
-            chat0 = await client.start_chat(
-                "What was Apple's revenue and operating income in fiscal year 2025?",
-                [tool],
-            )
-            print(chat0.messages)
+        chat0 = await client.start_chat(
+            "What was Apple's revenue and operating income in fiscal year 2025?",
+            [tool],
+        )
+        print(chat0.messages)
 
 
 """

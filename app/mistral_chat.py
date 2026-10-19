@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import inspect
 import json
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import NotRequired, Self, TypedDict, cast
 
 import httpx
@@ -84,6 +85,8 @@ class MistralCompletionsClient:
                 args = cast(dict[str, object], json.loads(c["function"]["arguments"]))
                 fn = allowed_functions[name]
                 value = fn.fn(**args)
+                if inspect.isawaitable(value):
+                    value = await cast(Awaitable[object], value)
                 tool_messages.append(
                     {
                         "role": "tool",
