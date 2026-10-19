@@ -7,6 +7,8 @@ from typing import NotRequired, Self, TypedDict, cast
 
 import httpx
 
+from app.http_helper import send_with_retries
+
 
 class FunctionCall(TypedDict):
     name: str
@@ -57,8 +59,9 @@ class MistralCompletionsClient:
             payload["tools"] = [t.meta for t in tools]
             payload["tool_choice"] = "auto"
         url = f"{self._mistral_api_base_url}/v1/chat/completions"
-        r = await self._client.post(url, headers=headers, json=payload)
-        _ = r.raise_for_status()
+
+        req = self._client.build_request("POST", url, headers=headers, json=payload)
+        r = await send_with_retries(self._client, req)
 
         raw = cast(object, r.json())
         if not isinstance(raw, dict):

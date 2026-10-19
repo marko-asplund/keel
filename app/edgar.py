@@ -4,6 +4,8 @@ from typing import Self, TypedDict, cast
 
 import httpx
 
+from app.http_helper import send_with_retries
+
 
 class Ticker(TypedDict):
     cik_str: int
@@ -31,11 +33,12 @@ class EdgarAPI:
         await self._client.aclose()
 
     async def _fetch_tickers(self) -> httpx.Response:
-        r = await self._client.get(
+        req = self._client.build_request(
+            "GET",
             "https://www.sec.gov/files/company_tickers.json",
             headers=self._request_headers,
         )
-        _ = r.raise_for_status()
+        r = await send_with_retries(self._client, req)
 
         return r
 
@@ -61,11 +64,8 @@ class EdgarAPI:
         cik = int(ticker_data["cik_str"])
         url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 
-        r = await self._client.get(
-            url,
-            headers=self._request_headers,
-        )
-        _ = r.raise_for_status()
+        req = self._client.build_request("GET", url, headers=self._request_headers)
+        r = await send_with_retries(self._client, req)
 
         data = cast(dict[str, object], r.json())
         facts = cast(dict[str, object], data["facts"])
