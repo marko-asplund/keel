@@ -12,6 +12,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "anyio>=4.15.1",
     "basedpyright>=1.40.2",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
