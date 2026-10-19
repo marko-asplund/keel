@@ -13,12 +13,12 @@ class Ticker(TypedDict):
 
 class EdgarAPI:
     def __init__(self, user_agent: str):
-        self._included_concepts = {
+        self._included_concepts: set[str] = {
             "RevenueFromContractWithCustomerExcludingAssessedTax",
             "OperatingIncomeLoss",
         }
-        self._client = httpx.Client(timeout=5.0)
-        self._user_agent = user_agent
+        self._client: httpx.Client = httpx.Client(timeout=5.0)
+        self._user_agent: str = user_agent
         self._request_headers: dict[str, str] = {
             "User-Agent": user_agent,
             "Accept": "application/json",
@@ -35,7 +35,7 @@ class EdgarAPI:
             "https://www.sec.gov/files/company_tickers.json",
             headers=self._request_headers,
         )
-        r.raise_for_status()
+        _ = r.raise_for_status()
 
         return r
 
@@ -46,11 +46,11 @@ class EdgarAPI:
             tickers: dict[str, Ticker] = cast(dict[str, Ticker], json.loads(text))
         else:
             r = self._fetch_tickers()
-            tickers_file.write_text(r.text)
+            _ = tickers_file.write_text(r.text)
             tickers: dict[str, Ticker] = cast(dict[str, Ticker], r.json())
         return {t["ticker"]: t for t in tickers.values()}
 
-    def get_company_financials(self, ticker: str, start_year: int, end_year: int):
+    def get_company_financials(self, ticker: str, start_year: int, end_year: int) -> object:
         by_ticker = self._get_tickers()
         data = by_ticker[ticker]
         if not data:
@@ -62,7 +62,7 @@ class EdgarAPI:
             url,
             headers=self._request_headers,
         )
-        r.raise_for_status()
+        _ = r.raise_for_status()
 
         data = r.json()
         gaap = data["facts"]["us-gaap"]

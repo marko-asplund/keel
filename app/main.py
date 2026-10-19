@@ -4,9 +4,8 @@ import os
 from dotenv import load_dotenv
 
 from app.edgar import EdgarAPI
-from app.mistral_chat import MistralCompletionsClient
+from app.mistral_chat import MistralCompletionsClient, Tool
 from app.tools import (
-    Tool,
     get_company_financials_tool_schema,
     tool_calculate_percentage_change,
 )
@@ -45,7 +44,7 @@ async def main() -> None:
 
         async with MistralCompletionsClient(mistral_api_key) as client:
             chat0 = await client.start_chat(
-                "What was Microsoft's revenue and operating income in fiscal year 2023?",
+                "What was Apple's revenue and operating income in fiscal year 2025?",
                 [tool],
             )
             print(chat0.messages)
