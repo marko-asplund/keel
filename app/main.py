@@ -3,11 +3,13 @@ import os
 
 from dotenv import load_dotenv
 
+from app.edgar import EdgarAPI
 from app.mistral_chat import MistralCompletionsClient
 from app.tools import tool_get_company_financials
 
 _ = load_dotenv()
 mistral_api_key: str = str(os.getenv("MISTRAL_API_KEY"))
+edgar_api_user_agent: str = str(os.getenv("EDGAR_API_USER_AGENT"))
 
 
 async def multiturn_tool_chat(client: MistralCompletionsClient) -> None:
@@ -30,17 +32,23 @@ async def multiturn_tool_chat(client: MistralCompletionsClient) -> None:
 
 
 async def main() -> None:
+    user_agent = "Keel Research keel.app2026@gmail.com"
+    async with EdgarAPI(user_agent) as client:
+        await client.foo("MSFT", 2023, 2025)
+
+
+"""
     async with MistralCompletionsClient(mistral_api_key) as client:
         #        prompt = "What's the percentage increase from 120 to 150?"
         # prompt = "Calculate the percentage changes from 100 to 120, from 150 to 180, and from 200 to 250. Use the calculation tool for each, then compare the results."
         # prompt = "First, use the tool to calculate the percentage change from 120 to 150. Then take the percentage returned by the tool and use it as the old value for another percentage change calculation, with 50 as the new value. Use the tool for both calculations."
         # await multiturn_tool_chat(client)
 
-        chat0 = await client.start_chat(
-            "What was Microsoft's revenue and operating income in fiscal year 2023?",
-            [tool_get_company_financials],
-        )
-        print(chat0.messages)
+        #chat0 = await client.start_chat(
+        #    "What was Microsoft's revenue and operating income in fiscal year 2023?",
+        #    [tool_get_company_financials],
+        #)
+        #print(chat0.messages)
 
 
 #        chat1 = await client.start_chat("hello, world!", None)
@@ -48,7 +56,7 @@ async def main() -> None:
 
 #        chat2 = await chat1.chat("who is james bond?")
 #        print(chat2.messages)
-
+"""
 
 if __name__ == "__main__":
     asyncio.run(main())
