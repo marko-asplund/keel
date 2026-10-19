@@ -17,21 +17,21 @@ class EdgarAPI:
             "RevenueFromContractWithCustomerExcludingAssessedTax",
             "OperatingIncomeLoss",
         }
-        self._client = httpx.AsyncClient(timeout=5.0)
+        self._client = httpx.Client(timeout=5.0)
         self._user_agent = user_agent
         self._request_headers: dict[str, str] = {
             "User-Agent": user_agent,
             "Accept": "application/json",
         }
 
-    async def __aenter__(self) -> Self:
+    def __enter__(self) -> Self:
         return self
 
-    async def __aexit__(self, *args: object) -> None:
-        await self._client.aclose()
+    def __exit__(self, *args: object) -> None:
+        self._client.close()
 
-    async def _fetch_tickers(self) -> httpx.Response:
-        r = await self._client.get(
+    def _fetch_tickers(self) -> httpx.Response:
+        r = self._client.get(
             "https://www.sec.gov/files/company_tickers.json",
             headers=self._request_headers,
         )
@@ -39,26 +39,26 @@ class EdgarAPI:
 
         return r
 
-    async def _get_tickers(self):
+    def _get_tickers(self):
         tickers_file = Path("cache/tickers.json")
         if tickers_file.is_file():
             text = tickers_file.read_text()
             tickers: dict[str, Ticker] = cast(dict[str, Ticker], json.loads(text))
         else:
-            r = await self._fetch_tickers()
+            r = self._fetch_tickers()
             tickers_file.write_text(r.text)
             tickers: dict[str, Ticker] = cast(dict[str, Ticker], r.json())
         return {t["ticker"]: t for t in tickers.values()}
 
-    async def foo(self, ticker: str, start_year: int, end_year: int):
-        by_ticker = await self._get_tickers()
+    def get_company_financials(self, ticker: str, start_year: int, end_year: int):
+        by_ticker = self._get_tickers()
         data = by_ticker[ticker]
         if not data:
             raise ValueError(f"Ticker {ticker} not found")
         cik = int(data["cik_str"])
         url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 
-        r = await self._client.get(
+        r = self._client.get(
             url,
             headers=self._request_headers,
         )

@@ -23,53 +23,32 @@ tool_calculate_percentage_change: Tool = Tool(
 )
 
 
-def get_company_financials(
-    ticker: str, start_year: int, end_year: int
-) -> dict[str, object]:
-    return {
-        "ticker": "MSFT",
-        "source": "mock",
-        "currency": "USD",
-        "annual": [
-            {
-                "fiscal_year": 2023,
-                "revenue": 100_000_000_000,
-                "operating_income": 40_000_000_000,
-            },
-        ],
-    }
-
-
-tool_get_company_financials: Tool = Tool(
-    "get_company_financials",
-    get_company_financials,
-    {
-        "type": "function",
-        "function": {
-            "name": "get_company_financials",
-            "description": (
-                "Retrieve historical annual revenue and operating "
-                "income for a publicly traded company. "
-                "Years refer to company fiscal years."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "ticker": {
-                        "type": "string",
-                        "description": "Stock ticker, e.g. MSFT",
-                    },
-                    "start_year": {
-                        "type": "integer",
-                        "description": "First fiscal year",
-                    },
-                    "end_year": {
-                        "type": "integer",
-                        "description": "Last fiscal year",
-                    },
+get_company_financials_tool_schema: dict[str, object] = {
+    "type": "function",
+    "function": {
+        "name": "get_company_financials",
+        "description": (
+            "Retrieve historical annual revenue and operating "
+            "income for a publicly traded company. "
+            "Years refer to company fiscal years."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "Stock ticker, e.g. MSFT",
                 },
-                "required": ["ticker", "start_year", "end_year"],
+                "start_year": {
+                    "type": "integer",
+                    "description": "First fiscal year",
+                },
+                "end_year": {
+                    "type": "integer",
+                    "description": "Last fiscal year",
+                },
             },
+            "required": ["ticker", "start_year", "end_year"],
         },
     },
-)
+}

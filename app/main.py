@@ -5,7 +5,11 @@ from dotenv import load_dotenv
 
 from app.edgar import EdgarAPI
 from app.mistral_chat import MistralCompletionsClient
-from app.tools import tool_get_company_financials
+from app.tools import (
+    Tool,
+    get_company_financials_tool_schema,
+    tool_calculate_percentage_change,
+)
 
 _ = load_dotenv()
 mistral_api_key: str = str(os.getenv("MISTRAL_API_KEY"))
@@ -16,7 +20,7 @@ async def multiturn_tool_chat(client: MistralCompletionsClient) -> None:
     print("turn1")
     chat0 = await client.start_chat(
         "Calculate the percentage increase from 120 to 150 using the tool.",
-        [tool_get_company_financials],
+        [tool_calculate_percentage_change],
     )
     print(chat0.messages)
     print("turn2")
@@ -32,9 +36,19 @@ async def multiturn_tool_chat(client: MistralCompletionsClient) -> None:
 
 
 async def main() -> None:
-    user_agent = "Keel Research keel.app2026@gmail.com"
-    async with EdgarAPI(user_agent) as client:
-        await client.foo("MSFT", 2023, 2025)
+    with EdgarAPI("Keel Research keel.app2026@gmail.com") as edgar:
+        tool = Tool(
+            "get_company_financials",
+            edgar.get_company_financials,
+            get_company_financials_tool_schema,
+        )
+
+        async with MistralCompletionsClient(mistral_api_key) as client:
+            chat0 = await client.start_chat(
+                "What was Microsoft's revenue and operating income in fiscal year 2023?",
+                [tool],
+            )
+            print(chat0.messages)
 
 
 """
