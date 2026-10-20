@@ -4,9 +4,11 @@ import os
 from dotenv import load_dotenv
 
 from app.edgar import EdgarAPI
+from app.filing_retriever import FilingRetriever
 from app.mistral_chat import MistralCompletionsClient, Tool
 from app.tools import (
     get_company_financials_tool_schema,
+    search_filings_tool_schema,
     tool_calculate_percentage_change,
 )
 
@@ -35,21 +37,36 @@ async def multiturn_tool_chat(client: MistralCompletionsClient) -> None:
 
 
 async def main() -> None:
+    filing_retriever = FilingRetriever()
     async with (
         EdgarAPI("Keel Research keel.app2026@gmail.com") as edgar,
         MistralCompletionsClient(mistral_api_key) as client,
     ):
-        tool = Tool(
+        search_filings_tool_schema_tool = Tool(
+            "search_filings", filing_retriever.retrieve, search_filings_tool_schema
+        )
+        get_company_financials_tool = Tool(
             "get_company_financials",
             edgar.get_company_financials,
             get_company_financials_tool_schema,
         )
 
+        print("chat0")
         chat0 = await client.start_chat(
-            "What was Apple's revenue and operating income in fiscal year 2025?",
-            [tool],
+            "Did Microsoft's operating margin improve between FY2023 and FY2025?",
+            [get_company_financials_tool, search_filings_tool_schema_tool],
         )
         print(chat0.messages)
+
+        print("chat1")
+        chat1 = await client.start_chat(
+            "What risks does Microsoft identify related to artificial intelligence?",
+            [search_filings_tool_schema_tool],
+        )
+        print(chat1.messages)
+
+        #chat1 = await chat0.chat("What risks does Microsoft identify related to artificial intelligence?")
+        #print(chat1.messages)
 
 
 """

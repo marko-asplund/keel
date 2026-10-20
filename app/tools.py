@@ -52,3 +52,22 @@ get_company_financials_tool_schema: dict[str, object] = {
         },
     },
 }
+
+search_filings_tool_schema: dict[str, object] = {
+    "type": "function",
+    "function": {
+        "name": "search_filings",
+        "description": (
+            "Search SEC annual filings for passages relevant "
+            "to a financial or business question."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "years": {"type": "array", "items": {"type": "integer"}},
+            },
+            "required": ["query", "years"],
+        },
+    },
+}

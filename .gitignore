@@ -35,4 +35,7 @@ htmlcov/
 .pytest_cache/
 
 # Misc
-foo.json
+
+# Generated caches and vector database
+cache/tickers.json
+data/chroma/
