@@ -26,6 +26,7 @@ class AssistantMessage(TypedDict):
     tool_calls: NotRequired[list[ToolCall] | None]
 
 
+# Simple async wrapper for Mistral's Chat Completions API with multiturn chat and tool calling
 class MistralCompletionsClient:
     _mistral_api_base_url: str = "https://api.mistral.ai"
     _default_model_name: str = "mistral-small-latest"

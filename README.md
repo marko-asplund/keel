@@ -21,12 +21,22 @@ selected by `.python-version`):
 
 ```sh
 uv sync
+
+# Work around NLTK rejecting hard-linked LlamaIndex data files.
+UV_LINK_MODE=copy uv sync --reinstall-package llama-index-core
 ```
 
 Create a `.env` file containing your Mistral API key:
 
 ```dotenv
 MISTRAL_API_KEY=your-api-key
+```
+
+Place HTML financial filings in `data/documents`, then manually build the Chroma
+index:
+
+```sh
+uv run python -m app.rag_index
 ```
 
 Set your SEC contact name and email in the `EdgarAPI(...)` call in `app/main.py`

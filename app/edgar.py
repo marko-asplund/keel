@@ -13,6 +13,7 @@ class Ticker(TypedDict):
     title: str
 
 
+# Access company financial data through the U.S. SEC's EDGAR API
 class EdgarAPI:
     def __init__(self, user_agent: str):
         self._included_concepts: set[str] = {
