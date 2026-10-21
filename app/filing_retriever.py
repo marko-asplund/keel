@@ -48,9 +48,7 @@ class FilingRetriever:
                 MetadataFilter(
                     key="fiscal_year", operator=FilterOperator.IN, value=years
                 ),
-                MetadataFilter(
-                    key="ticker", operator=FilterOperator.EQ, value=ticker
-                ),
+                MetadataFilter(key="ticker", operator=FilterOperator.EQ, value=ticker),
             ]
         )
         retriever = self._index.as_retriever(

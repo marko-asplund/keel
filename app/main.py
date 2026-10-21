@@ -65,8 +65,8 @@ async def main() -> None:
         )
         print(chat1.messages)
 
-        #chat1 = await chat0.chat("What risks does Microsoft identify related to artificial intelligence?")
-        #print(chat1.messages)
+        # chat1 = await chat0.chat("What risks does Microsoft identify related to artificial intelligence?")
+        # print(chat1.messages)
 
 
 """
