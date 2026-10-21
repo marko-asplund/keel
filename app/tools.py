@@ -28,8 +28,9 @@ get_company_financials_tool_schema: dict[str, object] = {
     "function": {
         "name": "get_company_financials",
         "description": (
-            "Retrieve historical annual revenue and operating "
-            "income for a publicly traded company. "
+            "Retrieve numeric revenue and operating income data from SEC EDGAR "
+            "for a publicly traded company. Use for quantitative questions about "
+            "these metrics, including growth, comparisons, and operating margins. "
             "Years refer to company fiscal years."
         ),
         "parameters": {
@@ -58,8 +59,11 @@ search_filings_tool_schema: dict[str, object] = {
     "function": {
         "name": "search_filings",
         "description": (
-            "Search SEC annual filings for passages relevant "
-            "to a financial or business question."
+            "Search locally indexed SEC filings for a company and return relevant "
+            "text passages with source filenames. Use for qualitative questions "
+            "about disclosed risks, artificial intelligence, business strategy, "
+            "and management commentary. Only downloaded and indexed filings "
+            "are available."
         ),
         "parameters": {
             "type": "object",
