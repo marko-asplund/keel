@@ -39,3 +39,4 @@ htmlcov/
 # Generated caches and vector database
 cache/tickers.json
 data/chroma/
+data/documents/*.html

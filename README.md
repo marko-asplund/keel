@@ -26,21 +26,31 @@ uv sync
 UV_LINK_MODE=copy uv sync --reinstall-package llama-index-core
 ```
 
-Create a `.env` file containing your Mistral API key:
+Create a `.env` file containing your Mistral API key and SEC contact details:
 
 ```dotenv
 MISTRAL_API_KEY=your-api-key
+EDGAR_API_USER_AGENT="Your Name your.email@example.com"
 ```
 
-Place HTML financial filings in `data/documents`, then manually build the Chroma
-index:
+Download Microsoft's annual SEC filings into `data/documents` (filings are not
+included in Git):
+
+```sh
+mkdir -p data/documents
+uv run python -m scripts.get_sec_filings MSFT --year 2024 2025 2026 2023
+```
+
+Then manually build the Chroma index:
 
 ```sh
 uv run python -m app.rag_index
 ```
 
-Set your SEC contact name and email in the `EdgarAPI(...)` call in `app/main.py`
-(the example currently uses a hardcoded user agent), then run:
+To rebuild an existing index after changing the documents, delete `data/chroma/`
+before running the indexer again.
+
+Run the example chat:
 
 ```sh
 uv run python -m app.main

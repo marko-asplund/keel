@@ -39,7 +39,7 @@ async def multiturn_tool_chat(client: MistralCompletionsClient) -> None:
 async def main() -> None:
     filing_retriever = FilingRetriever()
     async with (
-        EdgarAPI("Keel Research keel.app2026@gmail.com") as edgar,
+        EdgarAPI(edgar_api_user_agent) as edgar,
         MistralCompletionsClient(mistral_api_key) as client,
     ):
         search_filings_tool_schema_tool = Tool(
