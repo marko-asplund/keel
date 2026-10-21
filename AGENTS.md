@@ -1,5 +1,14 @@
 # Project instructions
 
+## Manual RAG scripts
+
+Run these utilities from the project root:
+
+```bash
+uv run python -m scripts.rag_index  # build the index
+uv run python -m scripts.rag_query  # try semantic retrieval
+```
+
 ## After making changes
 
 Run these checks before considering work done:

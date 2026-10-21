@@ -44,7 +44,7 @@ uv run python -m scripts.get_sec_filings MSFT --year 2024 2025 2026 2023
 Then manually build the Chroma index:
 
 ```sh
-uv run python -m app.rag_index
+uv run python -m scripts.rag_index
 ```
 
 To rebuild an existing index after changing the documents, delete `data/chroma/`
