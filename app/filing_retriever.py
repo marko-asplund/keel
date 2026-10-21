@@ -14,6 +14,7 @@ from llama_index.vector_stores.chroma import ChromaVectorStore  # pyright: ignor
 
 
 class RetrievedPassage(TypedDict):
+    ticker: str | None
     text: str
     fiscal_year: int | None
     source: str | None
@@ -22,7 +23,7 @@ class RetrievedPassage(TypedDict):
 
 class FilingRetriever:
     DB_PATH: str = "./data/chroma"
-    COLLECTION_NAME: str = "msft_filings"
+    COLLECTION_NAME: str = "sec_filings"
     EMBEDDING_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"
     MAX_RESULTS: int = 3
 
@@ -40,12 +41,15 @@ class FilingRetriever:
         )
 
     async def retrieve(
-        self, query: str, years: list[int]
+        self, ticker: str, query: str, years: list[int]
     ) -> list[RetrievedPassage]:
         filters = MetadataFilters(
             filters=[
                 MetadataFilter(
                     key="fiscal_year", operator=FilterOperator.IN, value=years
+                ),
+                MetadataFilter(
+                    key="ticker", operator=FilterOperator.EQ, value=ticker
                 ),
             ]
         )
@@ -55,6 +59,7 @@ class FilingRetriever:
         results = await retriever.aretrieve(query)
         return [
             {
+                "ticker": r.node.metadata.get("ticker"),
                 "text": r.node.get_content(),
                 "fiscal_year": r.node.metadata.get("fiscal_year"),
                 "source": r.node.metadata.get("file_name"),

@@ -22,7 +22,7 @@ embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
 
 # Persistent Chroma database
 db = chromadb.PersistentClient(path="./data/chroma")
-collection = db.create_collection("msft_filings")
+collection = db.create_collection("sec_filings")
 
 vector_store = ChromaVectorStore(chroma_collection=collection)
 
@@ -43,6 +43,7 @@ for documents in reader.iter_data():
     for document in documents:
         filename = cast(str, document.metadata["file_name"])
         document.metadata["fiscal_year"] = int(filename.split("-")[1])
+        document.metadata["ticker"] = str(filename.split("-")[0])
 
         index.insert(document)
         print(f"Indexed {filename}")

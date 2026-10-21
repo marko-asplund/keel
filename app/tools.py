@@ -68,10 +68,11 @@ search_filings_tool_schema: dict[str, object] = {
         "parameters": {
             "type": "object",
             "properties": {
+                "ticker": {"type": "string"},
                 "query": {"type": "string"},
                 "years": {"type": "array", "items": {"type": "integer"}},
             },
-            "required": ["query", "years"],
+            "required": ["ticker", "query", "years"],
         },
     },
 }
