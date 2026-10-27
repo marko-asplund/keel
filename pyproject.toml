@@ -1,7 +1,7 @@
 [project]
 name = "keel"
 version = "0.1.0"
-description = "Add your description here"
+description = "A learning project for AI applications with multiturn chat, tool calling, RAG, and external data integrations."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -32,3 +32,6 @@ dev = [
 exclude = [
     "scripts/*.py",
 ]
+
+[tool.coverage.run]
+source = ["app"]
